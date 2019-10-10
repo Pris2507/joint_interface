@@ -16,32 +16,39 @@ std::string serial_message;
 
 // subscriber callback
 void write_callback(const sensor_msgs::JointState::ConstPtr& msg){
-
-    float rad_position = msg->position[0];
-    float var_rad = 0.0;
-    float var_steps = 0;
-
-    // a primeira iteração serve para modificar o valor de last_position e evitar problemas com o 0.0
-    if (first_iteration) {
-        last_position = rad_position;
-        first_iteration = false;
-    } else {
-        // manda sinal ao motor se alterou a posição
-        if (rad_position != last_position) {
-            // converte de rad para passos considerando 0.01 deg/step ou 0.0001745329 rad/step
-            var_rad = rad_position - last_position;
-            var_steps = int(var_rad/0.0001745329);
-            // cria a mensagem a ser mandada pro motor via serial
-            std::ostringstream stm;
-            stm << "DI" << var_steps << "\r";
-            serial_message = stm.str();
-            ROS_INFO_STREAM("Writing to serial port: " << serial_message);
-            // envia a mensagem
-			ser.write(serial_message);
-			ros::Duration(0.01).sleep();
-            ser.write("FL\r");
-			ros::Duration(0.01).sleep();
-        	last_position = rad_position;
+    for(int i=0;i<6;i++){
+        float rad_position = msg->position[0];
+        float var_rad = 0.0;
+        float var_steps = 0;
+        std::ostringstream stm;
+        // a primeira iteração serve para modificar o valor de last_position e evitar problemas com o 0.0
+        if (first_iteration) {
+            last_position = rad_position;
+            first_iteration = false;
+        } else {
+            // manda sinal ao motor se alterou a posição
+            if (rad_position != last_position) {
+                // converte de rad para passos considerando 0.01 deg/step ou 0.0001745329 rad/step
+                var_rad = rad_position - last_position;
+                var_steps = int(var_rad/0.0001745329);
+                // cria a mensagem a ser mandada pro motor via serial
+                stm.str("");
+                stm << (i+1) << "DI" << var_steps << "\r";
+                serial_message = stm.str();
+                ROS_INFO_STREAM("Writing to serial port: " << serial_message);
+                // envia a mensagem
+                ser.write(serial_message);
+                ros::Duration(0.01).sleep();
+                stm.str("");
+                stm << (i+1) << "FL\r";
+                serial_message = stm.str();
+                ROS_INFO_STREAM("Writing to serial port: " << serial_message);
+                ROS_INFO_STREAM("----------------------------------");
+                // envia a mensagem
+                ser.write(serial_message);
+                ros::Duration(0.01).sleep();
+                last_position = rad_position;
+            }
         }
     }  
 }
