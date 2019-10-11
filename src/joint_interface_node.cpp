@@ -7,8 +7,26 @@
 
 #include <string>
 #include <sstream>
+#include <vector>
+
+
+class joint{
+public:
+    joint(){
+        last_position=0.0;
+        first_iteration=true;
+    }
+    ~joint(){}
+public:
+    float last_position;
+    bool first_iteration;
+};
+
 
 serial::Serial ser;
+
+std::vector<joint> joints_select;
+
 
 float last_position = 0.0;
 bool first_iteration = true;
