@@ -9,6 +9,7 @@
 #include <sstream>
 #include <vector>
 
+#define juntas_num 6
 
 class joint{
 public:
@@ -27,27 +28,24 @@ serial::Serial ser;
 
 std::vector<joint> joints_select;
 
-
-float last_position = 0.0;
-bool first_iteration = true;
 std::string serial_message;
 
 // subscriber callback
 void write_callback(const sensor_msgs::JointState::ConstPtr& msg){
-    for(int i=0;i<6;i++){
-        float rad_position = msg->position[0];
+    for(int i=0;i<juntas_num;i++){
+        float rad_position = msg->position[i];
         float var_rad = 0.0;
         float var_steps = 0;
         std::ostringstream stm;
         // a primeira iteração serve para modificar o valor de last_position e evitar problemas com o 0.0
-        if (first_iteration) {
-            last_position = rad_position;
-            first_iteration = false;
+        if (joints_select[i].first_iteration) {
+            joints_select[i].last_position = rad_position;
+            joints_select[i].first_iteration = false;
         } else {
             // manda sinal ao motor se alterou a posição
-            if (rad_position != last_position) {
+            if (rad_position != joints_select[i].last_position) {
                 // converte de rad para passos considerando 0.01 deg/step ou 0.0001745329 rad/step
-                var_rad = rad_position - last_position;
+                var_rad = rad_position - joints_select[i].last_position;
                 var_steps = int(var_rad/0.0001745329);
                 // cria a mensagem a ser mandada pro motor via serial
                 stm.str("");
@@ -65,7 +63,7 @@ void write_callback(const sensor_msgs::JointState::ConstPtr& msg){
                 // envia a mensagem
                 ser.write(serial_message);
                 ros::Duration(0.01).sleep();
-                last_position = rad_position;
+                joints_select[i].last_position = rad_position;
             }
         }
     }  
@@ -73,6 +71,8 @@ void write_callback(const sensor_msgs::JointState::ConstPtr& msg){
 
 
 int main (int argc, char** argv){
+    joints_select.resize(juntas_num);
+    //inicia o programa
     ros::init(argc, argv, "joint_interface_node");
     ros::NodeHandle nh;
 
